@@ -3,7 +3,7 @@ const pg = require("pg");
 const express = require("express");
 //create client connection to the database
 const client = new pg.Client(
-  process.env.DATABASE_URL || "postgres://localhost:5432/postgres/the_acme_ice_cream_db"
+  process.env.DATABASE_URL || "postgresql://postgres:postgres@localhost:5432/the_acme_ice_cream_db"
 );
 //create the express server
 const server = express();
@@ -66,31 +66,32 @@ next(error);
 });
 
 
-// server.get("api/flavors/:id", (req, res, next) => {
-//     try{
-//         //create the SQL query to select all the notes in descending order based on when they were created
-//         const SQL = `SELECT * from flavors ORDER By created_at DESC`;
-//         //await the response from the client querying the database
-//         const response = await.client(SQL);
-//         //send the response. If no status code is given express will send 200 by default
-//         res.send(response.rows);
-//     }
-//     catch (error) {
-// next(error);
-//     }
-// });
+server.get("api/flavors/:id", async (req, res, next) => {
+    try{
+        //create the SQL query to select all the notes in descending order based on when they were created
+        const SQL = `SELECT * from flavors WHERE id = $1 ORDER By created_at DESC`;
+        //await the response from the client querying the database
+        const response = await client.query(SQL, [req.params.id]);
+        res.send(response.rows);
+        //send the response. If no status code is given express will send 200 by default
+        res.send(response.rows);
+    }
+    catch (error) {
+next(error);
+    }
+});
 
 //adds a new note to the table
 server.post("api/flavors", async (req, res, next) => {
     try{
         //destructure the keys needed from the request body
-        const {flavors, quantity} = req.body;
+        const {flavor, quantity} = req.body;
 
         //create the SQL query to create a new note based on the information in the request body
-        const SQL = `INSERT into flavors (flavors, quantity) VALUES($1, $2) ORDER By created_at DESC`;
+        const SQL = `INSERT into flavors (flavor, quantity) VALUES($1, $2) ORDER By created_at DESC`;
 
         //await the response from the client querying the database
-        const response = await client.query(SQL, [flavors,quantity]);
+        const response = await client.query(SQL, [flavor,quantity]);
 
         //send the response. If no status code is given express will send 200 by default
         res.status(201).send(response.rows[0]);
@@ -101,10 +102,33 @@ next(error);
 });
 
 //edits a note based on the id passed and information within the request body
-server.put("api/notes/:id", async (req, res, next) => {});
-
-
+server.put("api/flavors/:id", async (req, res, next) => {  try {
+    const SQL = `
+    UPDATE flavors
+    SET flavor=$1, quantity=$2, updated_at=now()
+    WHERE id=$3 RETURNING *
+    `;
+    const response = await client.query(SQL, [
+      req.body.flavor,
+      req.body.quantity,
+      req.params.id,
+    ]);
+    res.send(response.rows[0]);
+  } catch (error) {
+    console.log(error);
+  }
+});
 
 //deletes a note based on the id given
-server.delete("api/notes/:id", (req, res, next) => {});
+server.delete("api/flavors/:id", async (req, res, next) => { try {
+    const SQL = `
+    DELETE from flavors
+    WHERE id=$1
+    `;
+    const response = await client.query(SQL, [req.params.id]);
+    res.sendStatus(204);
+  } catch (error) {
+    console.log(error);
+  }
+});
 
