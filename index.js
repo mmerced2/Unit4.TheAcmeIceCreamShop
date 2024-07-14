@@ -3,7 +3,7 @@ const pg = require("pg");
 const express = require("express");
 //create client connection to the database
 const client = new pg.Client(
-  process.env.DATABASE_URL || "postgresql://postgres:postgres@localhost:5432/the_acme_ice_cream_db"
+  process.env.DATABASE_URL || "postgres://localhost/the_acme_ice_cream_db"
 );
 //create the express server
 const server = express();
