@@ -1,12 +1,33 @@
 //import packages needed
-const pg = require("pg");
-const express = require("express");
-//create client connection to the database
-const client = new pg.Client(
-  process.env.DATABASE_URL || "postgres://localhost/the_acme_ice_cream_db"
-);
-//create the express server
+///to start psql run psql -U postgres 
+// const pg = require('pg');
+// const express = require('express');
+// //create client connection to the database
+// const client = new pg.Client(
+//   process.env.DATABASE_URL || "postgres://localhost/the_acme_ice_cream_db"
+// );
+// //create the express server
+// const server = express();
+
+
+const express = require('express');
+const { Client } = require('pg');
+const bodyParser = require('body-parser');
+
 const server = express();
+const PORT = process.env.PORT || 3000;
+
+// Middleware
+server.use(bodyParser.json());
+
+// PostgreSQL client setup
+const client = new Client({
+  user: "postgres",
+  password: "",
+  host: "localhost",
+  port: 5432,
+  database: "the_acme_ice_cream_db",
+});
 
 //function to create our database table, seed data into the tables when first starting the server
 const init = async () => {
@@ -18,19 +39,19 @@ const init = async () => {
     let SQL = `DROP TABLE IF EXISTS flavors;
     CREATE TABLE flavors(
         id SERIAL PRIMARY KEY, 
-        flavor VARCHAR(255), 
+        flavor VARCHAR(255) NOT NULL, 
         quantity INTEGER DEFAULT 3 NOT NULL, 
         created_at TIMESTAMP DEFAULT now(),
-        updated_at TIMESTAMP DEFAULT now();
-    )`;
+        updated_at TIMESTAMP DEFAULT now()
+    );`;
 //wait for the database to process the query
     await client.query(SQL);
     console.log('table created');
 
 //create SQL statement to insert 3 new rows of data into our table
-    SQL = `INSERT INTO notes(flavor, quantity) VALUES ('strawberry', 12);
-    INSERT INTO notes(flavor, quantity) VALUES ('vanilla', 15);
-    INSERT INTO notes(flavor, quantity) VALUES ('chocolate chip', 14);`;
+    SQL = `INSERT INTO flavors(flavor, quantity) VALUES ('strawberry', 12);
+    INSERT INTO flavors(flavor, quantity) VALUES ('vanilla', 15);
+    INSERT INTO flavors(flavor, quantity) VALUES ('chocolate chip', 14);`;
 //wait for the database to process the query
     await client.query(SQL);
     console.log('table seeded');
