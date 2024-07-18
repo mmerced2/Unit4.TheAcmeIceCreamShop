@@ -4,7 +4,7 @@
 // const express = require('express');
 // //create client connection to the database
 // const client = new pg.Client(
-//   process.env.DATABASE_URL || "postgres://localhost/the_acme_ice_cream_db"
+//   process.env.DATABASE_URL || "postgres://postgres:@localhost:5432/the_acme_ice_cream_db"
 // );
 // //create the express server
 // const server = express();
@@ -23,7 +23,7 @@ server.use(bodyParser.json());
 // PostgreSQL client setup
 const client = new Client({
   user: "postgres",
-  password: "",
+  password: "postgres",
   host: "localhost",
   port: 5432,
   database: "the_acme_ice_cream_db",
@@ -72,7 +72,7 @@ server.use(require("morgan")("dev")); //logs the requests received to the server
 
 //routes
 //returns an array of note objects
-server.get("api/flavors", async (req, res, next) => {
+server.get("/api/flavors", async (req, res, next) => {
     try{
         //create the SQL query to select all the notes in descending order based on when they were created
         const SQL = `SELECT * from flavors ORDER By created_at DESC`;
@@ -87,7 +87,7 @@ next(error);
 });
 
 
-server.get("api/flavors/:id", async (req, res, next) => {
+server.get("/api/flavors/:id", async (req, res, next) => {
     try{
         //create the SQL query to select all the notes in descending order based on when they were created
         const SQL = `SELECT * from flavors WHERE id = $1 ORDER By created_at DESC`;
@@ -103,13 +103,13 @@ next(error);
 });
 
 //adds a new note to the table
-server.post("api/flavors", async (req, res, next) => {
+server.post("/api/flavors", async (req, res, next) => {
     try{
         //destructure the keys needed from the request body
         const {flavor, quantity} = req.body;
 
         //create the SQL query to create a new note based on the information in the request body
-        const SQL = `INSERT into flavors (flavor, quantity) VALUES($1, $2) ORDER By created_at DESC`;
+        const SQL = `INSERT into flavors (flavor, quantity) VALUES($1, $2) RETURNING *`;
 
         //await the response from the client querying the database
         const response = await client.query(SQL, [flavor,quantity]);
@@ -123,17 +123,21 @@ next(error);
 });
 
 //edits a note based on the id passed and information within the request body
-server.put("api/flavors/:id", async (req, res, next) => {  try {
+server.put("/api/flavors/:id", async (req, res, next) => {  try {
+    const {flavor, quantity, id} =req.body;
+
     const SQL = `
     UPDATE flavors
     SET flavor=$1, quantity=$2, updated_at=now()
-    WHERE id=$3 RETURNING *
+    WHERE id=$3 
+    RETURNING *
     `;
     const response = await client.query(SQL, [
       req.body.flavor,
       req.body.quantity,
       req.params.id,
     ]);
+    
     res.send(response.rows[0]);
   } catch (error) {
     console.log(error);
@@ -141,7 +145,7 @@ server.put("api/flavors/:id", async (req, res, next) => {  try {
 });
 
 //deletes a note based on the id given
-server.delete("api/flavors/:id", async (req, res, next) => { try {
+server.delete("/api/flavors/:id", async (req, res, next) => { try {
     const SQL = `
     DELETE from flavors
     WHERE id=$1
